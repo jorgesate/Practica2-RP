@@ -11,6 +11,10 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.externals import joblib
+from KNNClassifier import *
+from ParzenClassifier import *
+from GMMsk import *
+from SVMClassifier import *
 
 
 class SignalsUtils(BaseEstimator, ClassifierMixin):
@@ -23,6 +27,9 @@ class SignalsUtils(BaseEstimator, ClassifierMixin):
         self.classes = ['No senal', 'Peligro', 'Prohibicion', 'STOP']
 
     def read_images(self, save=True):
+
+        # Lee cada una de las imagenes de Train, y las adjunta al vector X, junto con su etiqueta en y
+        # a continuacion aplica reduccion de dimensionalidad con LDA y lo guarda en formato pickle
 
         CHANNELS = 3
         no_senales_dir = 'ImgsAlumnos/train/NO_SENALES'
@@ -102,6 +109,36 @@ class SignalsUtils(BaseEstimator, ClassifierMixin):
             QuadraticDiscriminantAnalysis()]
 
         names = ["Nearest Neighbors", "Linear SVM", "RBF SVM", "Naive Bayes", "QDA"]
+
+        sc = []
+
+        for name, clf in zip(names, classifiers):
+            clf.fit(self.X, self.y)
+            print('%s fitted' % (name))
+            scores = cross_val_score(clf, self.X, self.y, cv=10)
+
+            print('{:s} => Accuracy: {:.4f} (+/- {:.2f})'.format(name, scores.mean(), scores.std() * 2))
+            sc.append(scores.mean())
+
+        self.best_clf = classifiers[np.argmax(sc)]
+        print('Best classifier: {}'.format(names[np.argmax(sc)]))
+
+        self.best_clf.fit(self.X, self.y)
+
+        if save:
+            joblib.dump(self.best_clf, './model.pkl')
+
+        return self.best_clf
+
+    def test_clfs2(self, save=True):
+
+        classifiers = [
+            GMMClassifierSk(10),
+            ParzenClassifier(80),
+            KNNClassifier(20),
+            SVMClassifier(5)]
+
+        names = ["GMM", "Parzen", "KNN", "SVM"]
 
         sc = []
 
