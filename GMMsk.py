@@ -21,6 +21,7 @@ class GMMClassifierSk(BaseEstimator, ClassifierMixin):
     def fit(self, X, y):
 
         self.n_classes = len(np.unique(y))
+        final_score = []
         for nc in range(self.n_classes):
 
             scores_matrix = np.zeros([len(self.covs_type), len(self.ns)])
@@ -42,6 +43,9 @@ class GMMClassifierSk(BaseEstimator, ClassifierMixin):
 
             self.GMMclsf_best.append(GaussianMixture(n_components=self.n_best[nc], covariance_type=self.cov_best[nc])
                                      .fit(X[y == nc]))
+            final_score.append(cross_val_score(self.GMMclsf_best, X, y, cv=10, scoring='f1_macro'))
+
+        return self, final_score
 
         return self
 
